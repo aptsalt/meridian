@@ -1,0 +1,36 @@
+<div class="shell">
+  <header class="topbar">
+    <a class="brand" routerLink="/">
+      <span class="brand-mark">◇</span>
+      <span class="brand-name">Meridian</span>
+      <span class="brand-sub">Banking Policy Copilot</span>
+    </a>
+
+    <nav class="nav">
+      @for (item of nav; track item.path) {
+        <a
+          class="nav-link"
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: item.exact }"
+        >
+          <span class="nav-icon">{{ item.icon }}</span>
+          <span class="nav-label">{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <button class="session" type="button" (click)="rotate()" title="Rotate access token (silent refresh)">
+      <span class="dot" [class.active]="tokenStatus() === 'active'"></span>
+      <span class="session-meta">
+        <span class="session-user">{{ user() ?? 'signed out' }}</span>
+        <span class="session-token">token · {{ tokenStatus() }}</span>
+      </span>
+      <span class="avatar">{{ initials() }}</span>
+    </button>
+  </header>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>

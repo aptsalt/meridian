@@ -1,0 +1,175 @@
+import { PolicyDoc } from './models';
+
+/**
+ * Synthetic banking-policy corpus — NO real BMO data. Hand-written to be
+ * realistic enough to demonstrate retrieval, citation, and compliance flows.
+ * This is the "8,000+ policy documents" idea behind Lumi, in miniature.
+ */
+export const POLICY_CORPUS: PolicyDoc[] = [
+  {
+    id: 'p-pay-114',
+    code: 'PAY-114',
+    title: 'Wire Transfer Limits & Verification',
+    category: 'Payments',
+    jurisdiction: 'Canada (FINTRAC)',
+    updated: '2026-04-02',
+    owner: 'Payments Risk',
+    tags: ['wire', 'limits', 'verification', 'large value'],
+    body:
+      'Outbound domestic wire transfers above CAD 10,000 require step-up ' +
+      'verification and a secondary approver. International wires above ' +
+      'CAD 3,000 trigger a FINTRAC Large Value Transfer Report (LVTR). ' +
+      'Same-day cumulative wires above CAD 50,000 from a single retail ' +
+      'client must be escalated to the Payments Risk desk before release.',
+  },
+  {
+    id: 'p-kyc-203',
+    code: 'KYC-203',
+    title: 'Customer Identification & Enhanced Due Diligence',
+    category: 'KYC / AML',
+    jurisdiction: 'Canada (FINTRAC)',
+    updated: '2026-03-18',
+    owner: 'Financial Crimes',
+    tags: ['kyc', 'aml', 'edd', 'pep', 'onboarding'],
+    body:
+      'All new clients require two pieces of identification verified against ' +
+      'an authoritative source. Politically Exposed Persons (PEPs) and ' +
+      'high-risk jurisdictions require Enhanced Due Diligence (EDD) and ' +
+      'senior compliance sign-off. Identity must be re-verified every 24 ' +
+      'months for high-risk clients and on any material change of beneficial ' +
+      'ownership.',
+  },
+  {
+    id: 'p-aml-210',
+    code: 'AML-210',
+    title: 'Suspicious Transaction Monitoring & Reporting',
+    category: 'KYC / AML',
+    jurisdiction: 'Canada (FINTRAC)',
+    updated: '2026-05-09',
+    owner: 'Financial Crimes',
+    tags: ['aml', 'str', 'monitoring', 'thresholds'],
+    body:
+      'Transaction monitoring scenarios flag structuring (multiple sub-' +
+      'threshold deposits), rapid movement of funds, and inconsistent ' +
+      'activity versus the customer profile. A Suspicious Transaction Report ' +
+      '(STR) must be filed within 30 days of detecting reasonable grounds. ' +
+      'Tipping off a client about an STR is prohibited.',
+  },
+  {
+    id: 'p-api-330',
+    code: 'API-330',
+    title: 'Financial-grade API Security Standard (FAPI 2.0)',
+    category: 'API Security',
+    jurisdiction: 'Global (OpenID FAPI WG)',
+    updated: '2026-05-22',
+    owner: 'Platform Security',
+    tags: ['fapi', 'oauth', 'oidc', 'dpop', 'pkce', 'mtls', 'open banking'],
+    body:
+      'All open-banking and high-value APIs must conform to FAPI 2.0. ' +
+      'Access tokens must be sender-constrained using DPoP (Demonstrating ' +
+      'Proof-of-Possession) or mTLS. Authorization uses OAuth 2.0 ' +
+      'Authorization Code flow with PKCE; ID tokens follow OpenID Connect. ' +
+      'Bearer tokens without proof-of-possession are prohibited for ' +
+      'Financial-grade endpoints. Pushed Authorization Requests (PAR) are ' +
+      'required and refresh tokens must be rotated on each use.',
+  },
+  {
+    id: 'p-api-332',
+    code: 'API-332',
+    title: 'Token Handling, Storage & Rotation',
+    category: 'API Security',
+    jurisdiction: 'Internal Standard',
+    updated: '2026-04-28',
+    owner: 'Platform Security',
+    tags: ['tokens', 'bff', 'storage', 'rotation', 'csp'],
+    body:
+      'Single-page applications must not persist access or refresh tokens in ' +
+      'localStorage. The Backend-for-Frontend (BFF) pattern holds tokens in ' +
+      'an http-only, secure, same-site cookie session; the SPA never sees the ' +
+      'refresh token. Access tokens are short-lived (<= 10 minutes) and ' +
+      'rotated silently. A strict Content-Security-Policy and Subresource ' +
+      'Integrity are mandatory.',
+  },
+  {
+    id: 'p-len-440',
+    code: 'LEN-440',
+    title: 'Residential Mortgage Stress Test',
+    category: 'Lending',
+    jurisdiction: 'Canada (OSFI B-20)',
+    updated: '2026-02-11',
+    owner: 'Credit Risk',
+    tags: ['mortgage', 'stress test', 'b-20', 'gds', 'tds'],
+    body:
+      'Under OSFI Guideline B-20, residential mortgage applicants must ' +
+      'qualify at the greater of the contract rate plus 2% or the minimum ' +
+      'qualifying rate. Gross Debt Service (GDS) should not exceed 39% and ' +
+      'Total Debt Service (TDS) should not exceed 44%. Exceptions require ' +
+      'Credit Risk adjudication and documented compensating factors.',
+  },
+  {
+    id: 'p-len-447',
+    code: 'LEN-447',
+    title: 'Credit Card Dispute & Chargeback Handling',
+    category: 'Lending',
+    jurisdiction: 'Canada',
+    updated: '2026-01-30',
+    owner: 'Card Services',
+    tags: ['dispute', 'chargeback', 'card', 'provisional credit'],
+    body:
+      'A cardholder dispute must be acknowledged within 2 business days. ' +
+      'Provisional credit is issued within 10 business days while the ' +
+      'investigation proceeds. Network chargeback timelines (typically 120 ' +
+      'days from transaction) must be respected. Fraud disputes follow zero-' +
+      'liability rules where the cardholder is not at fault.',
+  },
+  {
+    id: 'p-dat-510',
+    code: 'DAT-510',
+    title: 'Customer Data Retention & Privacy (PIPEDA)',
+    category: 'Data & Privacy',
+    jurisdiction: 'Canada (PIPEDA)',
+    updated: '2026-03-03',
+    owner: 'Privacy Office',
+    tags: ['privacy', 'pipeda', 'retention', 'pii', 'consent'],
+    body:
+      'Personal information is collected only with meaningful consent and for ' +
+      'a stated purpose. Transaction records are retained for 7 years per ' +
+      'regulatory requirement, then securely destroyed. Customers may request ' +
+      'access to and correction of their personal information. Cross-border ' +
+      'processing requires a documented transfer assessment.',
+  },
+  {
+    id: 'p-ai-601',
+    code: 'AI-601',
+    title: 'Responsible AI & Generative-AI Usage',
+    category: 'AI Governance',
+    jurisdiction: 'Internal Standard',
+    updated: '2026-06-01',
+    owner: 'AI Governance Office',
+    tags: ['ai', 'genai', 'rag', 'grounding', 'human-in-the-loop', 'hallucination'],
+    body:
+      'Generative-AI assistants that answer policy questions must be grounded ' +
+      'in retrieved, citeable source documents (RAG). Every material answer ' +
+      'must show its citations and a confidence/groundedness signal. ' +
+      'Customer-impacting actions require human-in-the-loop approval. Models ' +
+      'must not be trained on customer PII without Privacy Office approval, ' +
+      'and outputs must pass PII-redaction and disclaimer guardrails before ' +
+      'display.',
+  },
+  {
+    id: 'p-san-705',
+    code: 'SAN-705',
+    title: 'Sanctions Screening & Restricted Lists',
+    category: 'Sanctions',
+    jurisdiction: 'Canada (OSFI / Global)',
+    updated: '2026-05-14',
+    owner: 'Financial Crimes',
+    tags: ['sanctions', 'screening', 'restricted', 'ofac', 'embargo'],
+    body:
+      'All parties to a transaction are screened against consolidated ' +
+      'sanctions lists (OSFI, OFAC, UN, EU). A positive match blocks the ' +
+      'transaction and is escalated to the Sanctions desk within 1 hour. ' +
+      'Holdings on the restricted-securities list may not be purchased for ' +
+      'discretionary client accounts.',
+  },
+];

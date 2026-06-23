@@ -1,0 +1,65 @@
+<div class="page">
+  <div class="page-head">
+    <span class="eyebrow">Knowledge base</span>
+    <h1>Policy Library</h1>
+    <p>
+      The grounding corpus behind the copilot — {{ all.length }} synthetic banking
+      policies across payments, KYC/AML, FAPI security, lending, privacy, AI
+      governance and sanctions. Search and filtering are pure signals + a computed.
+    </p>
+  </div>
+
+  <div class="controls card">
+    <input
+      class="search"
+      type="search"
+      [ngModel]="query()"
+      (ngModelChange)="query.set($event)"
+      placeholder="Search policies… (e.g. wire, DPoP, stress test, STR)"
+    />
+    <div class="cats">
+      @for (c of categories; track c) {
+        <button
+          class="cat"
+          type="button"
+          [class.active]="category() === c"
+          (click)="category.set(c)"
+        >{{ c }}</button>
+      }
+    </div>
+    <div class="result-meta">
+      <span class="mono">{{ count() }}</span> match{{ count() === 1 ? '' : 'es' }}
+      @if (query() || category() !== 'All') {
+        <button class="link" type="button" (click)="clear()">clear</button>
+      }
+    </div>
+  </div>
+
+  <div class="policy-list">
+    @for (p of filtered(); track p.id) {
+      <article class="policy" [class.open]="expanded() === p.id">
+        <button class="policy-head" type="button" (click)="toggle(p.id)">
+          <span class="code mono">{{ p.code }}</span>
+          <span class="title">{{ p.title }}</span>
+          <span class="cat-tag">{{ p.category }}</span>
+          <span class="chev">{{ expanded() === p.id ? '−' : '+' }}</span>
+        </button>
+        @if (expanded() === p.id) {
+          <div class="policy-body">
+            <p>{{ p.body }}</p>
+            <div class="meta">
+              <span class="tag">{{ p.jurisdiction }}</span>
+              <span class="tag">Owner · {{ p.owner }}</span>
+              <span class="tag">Updated {{ p.updated }}</span>
+            </div>
+            <div class="tags">
+              @for (t of p.tags; track t) { <span class="kw mono">#{{ t }}</span> }
+            </div>
+          </div>
+        }
+      </article>
+    } @empty {
+      <div class="card empty">No policies match — try a broader term.</div>
+    }
+  </div>
+</div>

@@ -1,0 +1,134 @@
+<div class="console">
+  <!-- ============ CHAT COLUMN ============ -->
+  <section class="chat">
+    <div class="thread">
+      @for (m of messages(); track m.id) {
+        <article class="msg" [class.user]="m.role === 'user'" [class.assistant]="m.role === 'assistant'">
+          <div class="avatar" [class.you]="m.role === 'user'">
+            {{ m.role === 'user' ? 'You' : 'M' }}
+          </div>
+          <div class="bubble">
+            <div class="text">{{ m.text }}@if (m.streaming) {<span class="caret"></span>}</div>
+
+            @if (m.citations.length) {
+              <div class="cites">
+                @for (c of m.citations; track c.policyId) {
+                  <span class="cite" [title]="c.snippet">
+                    <span class="cite-marker">[{{ c.marker }}]</span>
+                    <span class="cite-code mono">{{ c.code }}</span>
+                    <span class="cite-title">{{ c.title }}</span>
+                  </span>
+                }
+              </div>
+            }
+
+            @if (m.phase === 'finalized') {
+              <div class="verdict ok">✓ Approved &amp; released · audit recorded</div>
+            } @else if (m.phase === 'rejected') {
+              <div class="verdict bad">✗ Rejected · routed to second-line review</div>
+            }
+          </div>
+        </article>
+      }
+    </div>
+
+    <!-- approval gate (HITL) -->
+    @if (awaitingApproval()) {
+      <div class="approval">
+        <div class="approval-head">
+          <span class="pulse"></span>
+          <strong>Human-in-the-loop</strong>
+          <span class="muted">— this answer is paused for advisor sign-off (AI-601)</span>
+        </div>
+        <div class="approval-actions">
+          <button class="btn btn-ok" type="button" (click)="approve()">Approve &amp; release</button>
+          <button class="btn btn-bad" type="button" (click)="reject()">Reject</button>
+        </div>
+      </div>
+    }
+
+    <!-- composer -->
+    <div class="composer">
+      @if (!busy() && messages().length <= 1) {
+        <div class="suggestions">
+          @for (s of suggestions; track s) {
+            <button class="sugg" type="button" (click)="useSuggestion(s)">{{ s }}</button>
+          }
+        </div>
+      }
+      <div class="composer-row">
+        <textarea
+          [ngModel]="draft()"
+          (ngModelChange)="draft.set($event)"
+          (keydown)="onKey($event)"
+          [disabled]="busy()"
+          rows="1"
+          placeholder="Ask a banking-policy question…"
+        ></textarea>
+        <button class="btn btn-primary send" type="button" (click)="send()" [disabled]="busy() || !draft().trim()">
+          {{ busy() ? 'Working…' : 'Send' }}
+        </button>
+      </div>
+      <div class="composer-foot">
+        <span class="muted">Grounded RAG · cited · human-approved. Not financial advice.</span>
+        <button class="link" type="button" (click)="reset()">Reset</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ AGENT PANEL ============ -->
+  <aside class="panel">
+    <div class="panel-card">
+      <div class="panel-head">
+        <span class="eyebrow">Agent</span>
+        <span class="phase-pill" [attr.data-phase]="phase()">{{ phaseLabel() }}</span>
+      </div>
+
+      <div class="ground">
+        <div class="ground-top">
+          <span>Groundedness</span>
+          <span class="mono">{{ groundedness() }}%</span>
+        </div>
+        <div class="ground-bar"><i [style.width.%]="groundedness()"></i></div>
+      </div>
+
+      <app-agent-trace [steps]="trace()" />
+    </div>
+
+    <div class="panel-card">
+      <span class="eyebrow">MCP Tools</span>
+      @if (tools().length) {
+        <ul class="tools">
+          @for (t of tools(); track t.id) {
+            <li class="tool" [class.done]="t.status === 'done'">
+              <span class="tool-top">
+                <span class="tool-name mono">{{ t.tool }}()</span>
+                <span class="tool-status" [class]="t.status">{{ t.status }}</span>
+              </span>
+              @if (t.result) { <span class="tool-result">{{ t.result }}</span> }
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted small">policy_search · compliance_check · portfolio_scan · rate_lookup</p>
+      }
+    </div>
+
+    @defer (when audit().length > 0) {
+      <div class="panel-card">
+        <span class="eyebrow">Audit · hash-chained</span>
+        <ul class="audit">
+          @for (a of audit(); track a.seq) {
+            <li class="audit-row">
+              <span class="audit-seq mono">#{{ a.seq }}</span>
+              <span class="audit-action">{{ a.action }}</span>
+              <span class="audit-hash mono" [title]="'prev ' + a.prevHash">{{ a.hash }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    } @placeholder {
+      <div class="panel-card muted small">Approved decisions are written to a tamper-evident audit chain.</div>
+    }
+  </aside>
+</div>

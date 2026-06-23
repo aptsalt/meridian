@@ -1,0 +1,53 @@
+:host { display: block; min-height: 100vh; }
+
+.shell { min-height: 100vh; display: flex; flex-direction: column; }
+
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 1.5rem;
+  padding: 0.7rem 1.25rem;
+  background: rgba(10, 15, 28, 0.82);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand { display: flex; align-items: baseline; gap: 0.5rem; }
+.brand-mark { color: var(--brand-2); font-size: 1.3rem; }
+.brand-name { font-weight: 800; letter-spacing: -0.02em; font-size: 1.15rem; }
+.brand-sub { color: var(--faint); font-size: 0.74rem; }
+
+.nav { display: flex; gap: 0.25rem; margin-left: 0.5rem; flex: 1; }
+.nav-link {
+  display: flex; align-items: center; gap: 0.45rem;
+  padding: 0.45rem 0.8rem; border-radius: var(--radius-sm);
+  color: var(--muted); font-weight: 600; font-size: 0.88rem;
+  border: 1px solid transparent; transition: all 0.15s ease;
+}
+.nav-link:hover { color: var(--text); background: var(--panel); }
+.nav-link.active { color: var(--text); background: var(--panel-2); border-color: var(--line-2); }
+.nav-icon { font-size: 0.95rem; color: var(--brand-2); }
+
+.session {
+  display: flex; align-items: center; gap: 0.6rem;
+  background: var(--panel); border: 1px solid var(--line-2);
+  border-radius: 999px; padding: 0.3rem 0.4rem 0.3rem 0.8rem; cursor: pointer;
+  color: var(--text);
+}
+.session:hover { border-color: var(--brand); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+.dot.active { background: var(--ok); box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.18); }
+.session-meta { display: flex; flex-direction: column; line-height: 1.15; text-align: right; }
+.session-user { font-size: 0.76rem; font-weight: 600; }
+.session-token { font-size: 0.66rem; color: var(--faint); }
+.avatar {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  color: #03101f; font-weight: 800; font-size: 0.72rem;
+}
+
+.content { flex: 1; }
+
+@media (max-width: 860px) {
+  .brand-sub, .nav-label, .session-meta { display: none; }
+  .nav { margin-left: 0; }
+}
