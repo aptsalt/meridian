@@ -8,12 +8,26 @@ import {
 import { FormsModule } from '@angular/forms';
 import { CopilotEngine } from '../../core/copilot-engine';
 import { AgentTraceComponent } from './agent-trace';
+import { Citation, PolicyCategory } from '../../core/models';
+
+interface OpenPolicy {
+  code: string;
+  title: string;
+  jurisdiction: string;
+  owner: string;
+  updated: string;
+  tags: string[];
+  markText: string;
+  restText: string;
+  marker: number;
+}
 
 /**
  * ConsoleComponent — the agentic RAG copilot. Zoneless + OnPush; every dynamic
- * value is a signal read from the CopilotEngine. Demonstrates: signals/computed,
- * new control flow (@if/@for/@switch), @defer for the audit panel, two-way
- * binding via ngModel + signal, and a human-in-the-loop approval gate.
+ * value is a signal read from the CopilotEngine. Demonstrates signals/computed,
+ * new control flow (@if/@for/@switch), @defer, two-way binding, and a rich
+ * governance surface: reject-with-reason, verifiable citations, span feedback,
+ * inline evaluation, permission-gated retrieval scope, and cost transparency.
  */
 @Component({
   selector: 'app-console',
@@ -33,20 +47,17 @@ export class ConsoleComponent {
   readonly groundedness = this.engine.groundedness;
   readonly audit = this.engine.audit;
   readonly suggestions = this.engine.suggestions;
+  readonly cost = this.engine.cost;
+  readonly allCategories = this.engine.allCategories;
+  readonly allowedCount = this.engine.allowedCount;
 
   readonly draft = signal('');
+  readonly rejecting = signal(false);
+  readonly rejectNote = signal('');
+  readonly openPolicy = signal<OpenPolicy | null>(null);
+
   readonly tools = computed(() => this.run()?.tools ?? []);
   readonly trace = computed(() => this.run()?.trace ?? []);
-  readonly citations = computed(() => {
-    // citations of the latest assistant message
-    const msgs = this.messages();
-    for (let i = msgs.length - 1; i >= 0; i--) {
-      if (msgs[i].role === 'assistant' && msgs[i].citations.length) {
-        return msgs[i].citations;
-      }
-    }
-    return [];
-  });
 
   readonly phaseLabel = computed(() => {
     const map: Record<string, string> = {
@@ -62,6 +73,13 @@ export class ConsoleComponent {
     };
     return map[this.phase()] ?? 'Idle';
   });
+
+  isAllowed(c: PolicyCategory): boolean {
+    return this.engine.isAllowed(c);
+  }
+  toggleCategory(c: PolicyCategory): void {
+    this.engine.toggleCategory(c);
+  }
 
   send(): void {
     const q = this.draft().trim();
@@ -80,13 +98,56 @@ export class ConsoleComponent {
     this.engine.approve();
   }
 
-  reject(): void {
-    this.engine.reject('Needs a second-line compliance review');
+  startReject(): void {
+    this.rejecting.set(true);
+    this.rejectNote.set('');
+  }
+  cancelReject(): void {
+    this.rejecting.set(false);
+  }
+  confirmReject(): void {
+    this.engine.reject(this.rejectNote());
+    this.rejecting.set(false);
+    this.rejectNote.set('');
+  }
+
+  feedbackUp(messageId: string): void {
+    this.engine.recordFeedback(messageId, 'up');
+  }
+  feedbackDown(messageId: string): void {
+    this.engine.recordFeedback(messageId, 'down');
+  }
+  evaluate(messageId: string): void {
+    this.engine.evaluate(messageId);
+  }
+
+  /** Verifiable citation: open the full source doc with the cited span marked. */
+  openCite(c: Citation): void {
+    const doc = this.engine.getPolicy(c.policyId);
+    if (!doc) return;
+    const rawSnippet = c.snippet.replace(/…$/, '');
+    const markLen = Math.min(rawSnippet.length, doc.body.length);
+    this.openPolicy.set({
+      code: doc.code,
+      title: doc.title,
+      jurisdiction: doc.jurisdiction,
+      owner: doc.owner,
+      updated: doc.updated,
+      tags: doc.tags,
+      marker: c.marker,
+      markText: doc.body.slice(0, markLen),
+      restText: doc.body.slice(markLen),
+    });
+  }
+  closeCite(): void {
+    this.openPolicy.set(null);
   }
 
   reset(): void {
     this.engine.reset();
     this.draft.set('');
+    this.rejecting.set(false);
+    this.openPolicy.set(null);
   }
 
   onKey(event: KeyboardEvent): void {

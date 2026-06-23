@@ -12,12 +12,14 @@
 
             @if (m.citations.length) {
               <div class="cites">
+                <span class="cites-label">Sources — click to verify</span>
                 @for (c of m.citations; track c.policyId) {
-                  <span class="cite" [title]="c.snippet">
+                  <button class="cite" type="button" (click)="openCite(c)" [title]="'Open ' + c.code">
                     <span class="cite-marker">[{{ c.marker }}]</span>
                     <span class="cite-code mono">{{ c.code }}</span>
                     <span class="cite-title">{{ c.title }}</span>
-                  </span>
+                    <span class="cite-go">↗</span>
+                  </button>
                 }
               </div>
             }
@@ -25,14 +27,49 @@
             @if (m.phase === 'finalized') {
               <div class="verdict ok">✓ Approved &amp; released · audit recorded</div>
             } @else if (m.phase === 'rejected') {
-              <div class="verdict bad">✗ Rejected · routed to second-line review</div>
+              <div class="verdict bad">
+                ✗ Rejected · routed to second-line review
+                @if (m.rejectNote) { <span class="reject-note">“{{ m.rejectNote }}”</span> }
+              </div>
+            }
+
+            <!-- span/answer-level feedback + inline evaluation (Beacon + ALPHA) -->
+            @if (m.role === 'assistant' && !m.streaming && m.citations.length) {
+              <div class="answer-actions">
+                <div class="fb">
+                  <span class="fb-label">Was this grounded?</span>
+                  <button class="fb-btn" type="button" [class.active]="m.feedback === 'up'" (click)="feedbackUp(m.id)" title="Helpful / grounded">▲</button>
+                  <button class="fb-btn down" type="button" [class.active]="m.feedback === 'down'" (click)="feedbackDown(m.id)" title="Not grounded">▼</button>
+                  @if (m.feedback) { <span class="fb-saved">feedback recorded</span> }
+                </div>
+                @if (!m.evalResult) {
+                  <button class="eval-btn" type="button" (click)="evaluate(m.id)">⚖ Evaluate</button>
+                }
+              </div>
+
+              @if (m.evalResult; as ev) {
+                <div class="eval">
+                  <div class="eval-head">
+                    <span>Evaluation</span>
+                    <span class="eval-overall mono">{{ ev.overall }}/100</span>
+                  </div>
+                  <div class="meter"><span>Faithfulness</span><i [style.width.%]="ev.faithfulness"></i><b class="mono">{{ ev.faithfulness }}</b></div>
+                  <div class="meter"><span>Citation coverage</span><i [style.width.%]="ev.citationCoverage"></i><b class="mono">{{ ev.citationCoverage }}</b></div>
+                  <div class="meter"><span>Suitability</span><i [style.width.%]="ev.suitability"></i><b class="mono">{{ ev.suitability }}</b></div>
+                  @if (ev.unsupported > 0) {
+                    <p class="eval-flag">⚠ {{ ev.unsupported }} unsupported claim flagged — review before release.</p>
+                  } @else {
+                    <p class="eval-ok">All claims trace to a cited source.</p>
+                  }
+                </div>
+              }
             }
           </div>
         </article>
       }
     </div>
 
-    <!-- approval gate (HITL) -->
+    <!-- approval gate (HITL) with reject-with-reason -->
     @if (awaitingApproval()) {
       <div class="approval">
         <div class="approval-head">
@@ -40,10 +77,24 @@
           <strong>Human-in-the-loop</strong>
           <span class="muted">— this answer is paused for advisor sign-off (AI-601)</span>
         </div>
-        <div class="approval-actions">
-          <button class="btn btn-ok" type="button" (click)="approve()">Approve &amp; release</button>
-          <button class="btn btn-bad" type="button" (click)="reject()">Reject</button>
-        </div>
+
+        @if (!rejecting()) {
+          <div class="approval-actions">
+            <button class="btn btn-ok" type="button" (click)="approve()">Approve &amp; release</button>
+            <button class="btn btn-bad" type="button" (click)="startReject()">Reject…</button>
+          </div>
+        } @else {
+          <div class="reject-form">
+            <label for="rj">Reason for rejection (recorded to the audit trail)</label>
+            <textarea id="rj" rows="2"
+              [ngModel]="rejectNote()" (ngModelChange)="rejectNote.set($event)"
+              placeholder="e.g. Threshold misread — escalate to Payments Risk desk"></textarea>
+            <div class="reject-actions">
+              <button class="btn btn-bad" type="button" (click)="confirmReject()" [disabled]="!rejectNote().trim()">Confirm rejection</button>
+              <button class="btn" type="button" (click)="cancelReject()">Cancel</button>
+            </div>
+          </div>
+        }
       </div>
     }
 
@@ -92,7 +143,30 @@
         <div class="ground-bar"><i [style.width.%]="groundedness()"></i></div>
       </div>
 
+      @if (cost(); as c) {
+        <div class="cost">
+          <span class="cost-item">latency <b class="mono">{{ c.ms }}ms</b></span>
+          <span class="cost-item">≈ tokens <b class="mono">{{ c.tokens }}</b></span>
+        </div>
+      }
+
       <app-agent-trace [steps]="trace()" />
+    </div>
+
+    <!-- permission-gated retrieval scope (Beacon) -->
+    <div class="panel-card">
+      <div class="panel-head">
+        <span class="eyebrow">Retrieval scope</span>
+        <span class="scope-count mono">{{ allowedCount() }}/{{ allCategories.length }}</span>
+      </div>
+      <p class="muted small scope-help">The agent may only retrieve from enabled categories — filtered before retrieval.</p>
+      <div class="scopes">
+        @for (cat of allCategories; track cat) {
+          <button class="scope" type="button" [class.on]="isAllowed(cat)" (click)="toggleCategory(cat)">
+            <span class="scope-dot"></span>{{ cat }}
+          </button>
+        }
+      </div>
     </div>
 
     <div class="panel-card">
@@ -131,4 +205,29 @@
       <div class="panel-card muted small">Approved decisions are written to a tamper-evident audit chain.</div>
     }
   </aside>
+
+  <!-- ============ VERIFIABLE CITATION DRAWER ============ -->
+  @if (openPolicy(); as p) {
+    <div class="drawer-scrim" (click)="closeCite()"></div>
+    <aside class="drawer">
+      <div class="drawer-head">
+        <div>
+          <span class="drawer-marker mono">[{{ p.marker }}]</span>
+          <span class="drawer-code mono">{{ p.code }}</span>
+        </div>
+        <button class="drawer-close" type="button" (click)="closeCite()" aria-label="Close">✕</button>
+      </div>
+      <h3 class="drawer-title">{{ p.title }}</h3>
+      <div class="drawer-meta">
+        <span class="tag">{{ p.jurisdiction }}</span>
+        <span class="tag">Owner · {{ p.owner }}</span>
+        <span class="tag">Updated {{ p.updated }}</span>
+      </div>
+      <p class="drawer-body"><mark>{{ p.markText }}</mark>{{ p.restText }}</p>
+      <div class="drawer-tags">
+        @for (t of p.tags; track t) { <span class="kw mono">#{{ t }}</span> }
+      </div>
+      <p class="drawer-foot">✓ This is the exact source the answer cited — highlighted span is the grounded passage.</p>
+    </aside>
+  }
 </div>

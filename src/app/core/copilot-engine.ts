@@ -5,7 +5,11 @@ import {
   AuditEntry,
   ChatMessage,
   Citation,
+  EvalResult,
+  Feedback,
+  PolicyCategory,
   PolicyDoc,
+  RunCost,
   ToolCall,
   ToolName,
   TraceStep,
@@ -46,11 +50,23 @@ export class CopilotEngine {
   private readonly _run = signal<AgentRun | null>(null);
   private readonly _audit = signal<AuditEntry[]>([]);
   private readonly _busy = signal(false);
+  private readonly _feedback = signal<Feedback[]>([]);
+  private readonly _cost = signal<RunCost | null>(null);
+
+  // Permission-gated retrieval (Beacon pattern): the agent may only retrieve
+  // from policy categories the operator has enabled — filtered BEFORE retrieval.
+  readonly allCategories: PolicyCategory[] = [
+    'Payments', 'KYC / AML', 'Lending', 'API Security',
+    'Data & Privacy', 'AI Governance', 'Sanctions',
+  ];
+  private readonly _allowed = signal<Set<PolicyCategory>>(new Set(this.allCategories));
 
   readonly messages = this._messages.asReadonly();
   readonly run = this._run.asReadonly();
   readonly audit = this._audit.asReadonly();
   readonly busy = this._busy.asReadonly();
+  readonly feedback = this._feedback.asReadonly();
+  readonly cost = this._cost.asReadonly();
 
   readonly phase = computed(() => this._run()?.phase ?? 'idle');
   readonly awaitingApproval = computed(() => this.phase() === 'awaiting_approval');
@@ -59,6 +75,7 @@ export class CopilotEngine {
     if (!r || !r.citations.length) return 0;
     return Math.min(100, 55 + r.citations.length * 12 + (r.grounded ? 9 : 0));
   });
+  readonly allowedCount = computed(() => this._allowed().size);
 
   readonly suggestions: string[] = [
     'What are the limits and reports for a CAD 25,000 international wire?',
@@ -115,6 +132,7 @@ export class CopilotEngine {
     run.citations = citations;
     this._run.set({ ...run });
     const draft = this.composeAnswer(q, hits, run.tools, citations);
+    run.draft = draft;
     const msg = this.pushMessage({
       role: 'assistant',
       text: '',
@@ -127,10 +145,24 @@ export class CopilotEngine {
     // 5) GUARDRAILS
     await this.step(run, 'guardrail', 'Guardrails', 'PII redaction · citation check · disclaimer', 360);
 
+    // cost/latency transparency (Beacon pattern)
+    this.computeCost(run);
+
     // 6) HUMAN-IN-THE-LOOP
     this.setPhase(run, 'awaiting_approval');
     await this.step(run, 'approval', 'Awaiting approval', 'Material answer paused for advisor sign-off', 0, 'running');
     this._busy.set(false);
+  }
+
+  private computeCost(run: AgentRun): void {
+    const ms = run.trace.reduce((sum, s) => sum + (s.ms ?? 0), 0);
+    // rough token estimate: ~4 chars/token over query + draft + tool results
+    const chars =
+      run.query.length +
+      run.draft.length +
+      run.tools.reduce((s, t) => s + (t.result?.length ?? 0), 0);
+    const tokens = Math.round(chars / 4) + 120;
+    this._cost.set({ ms, tokens });
   }
 
   approve(): void {
@@ -146,28 +178,79 @@ export class CopilotEngine {
   reject(note = 'Rejected by advisor'): void {
     const run = this._run();
     if (!run || run.phase !== 'awaiting_approval') return;
-    this.completeStep(run, 'approval', note, 'error');
+    const reason = note.trim() || 'Rejected by advisor';
+    this.completeStep(run, 'approval', 'Rejected — ' + reason, 'error');
     this.setPhase(run, 'rejected');
-    this.writeAudit(run.id, 'REJECTED — ' + note);
-    this.markLastAssistant(false, 'rejected');
+    this.writeAudit(run.id, 'REJECTED — ' + reason);
+    this.markLastAssistant(false, 'rejected', reason);
   }
 
   reset(): void {
     this._messages.set([this._messages()[0]]);
     this._run.set(null);
+    this._cost.set(null);
+  }
+
+  // ---- Permission-gated retrieval (operator scope toggles) -----------------
+  isAllowed(cat: PolicyCategory): boolean {
+    return this._allowed().has(cat);
+  }
+
+  toggleCategory(cat: PolicyCategory): void {
+    this._allowed.update((set) => {
+      const next = new Set(set);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  }
+
+  // ---- Span/answer-level feedback (Beacon pattern) -------------------------
+  recordFeedback(messageId: string, rating: 'up' | 'down', note?: string): void {
+    this.updateMessage(messageId, { feedback: rating });
+    this._feedback.update((list) => [
+      ...list,
+      { id: 'fb' + (list.length + 1), messageId, rating, note, ts: this.stamp() },
+    ]);
+  }
+
+  // ---- Evaluate a finalized answer (ALPHA eval harness) --------------------
+  evaluate(messageId: string): void {
+    const msg = this._messages().find((m) => m.id === messageId);
+    if (!msg) return;
+    const cited = msg.citations.length;
+    const grounded = cited >= 2;
+    const result: EvalResult = {
+      faithfulness: Math.min(100, 60 + cited * 12),
+      citationCoverage: Math.min(100, cited * 30 + 10),
+      suitability: grounded ? 92 : 71,
+      unsupported: grounded ? 0 : 1,
+      overall: 0,
+    };
+    result.overall = Math.round(
+      (result.faithfulness + result.citationCoverage + result.suitability) / 3,
+    );
+    this.updateMessage(messageId, { evalResult: result });
+  }
+
+  getPolicy(id: string): PolicyDoc | undefined {
+    return this.corpus.find((d) => d.id === id);
   }
 
   // ---- Agent steps ---------------------------------------------------------
   private async retrieve(run: AgentRun, q: string, isRetry = false): Promise<Scored[]> {
+    // Permission-gated: only search categories the operator has enabled.
+    const inScope = this.corpus.filter((d) => this._allowed().has(d.category));
     await this.step(
       run,
       'retrieve',
       isRetry ? 'Retrieve (retry)' : 'Retrieve',
-      'Hybrid search over ' + this.corpus.length + ' policy documents',
+      'Hybrid search over ' + inScope.length + ' in-scope policy documents (' +
+        this._allowed().size + '/' + this.allCategories.length + ' categories enabled)',
       560,
     );
     const terms = this.tokens(q);
-    const scored: Scored[] = this.corpus
+    const scored: Scored[] = inScope
       .map((doc) => ({ doc, score: this.score(doc, terms) }))
       .filter((s) => s.score > 0)
       .sort((a, b) => b.score - a.score)
@@ -408,11 +491,15 @@ export class CopilotEngine {
     );
   }
 
-  private markLastAssistant(streaming: boolean, phase: ChatMessage['phase']): void {
+  private markLastAssistant(
+    streaming: boolean,
+    phase: ChatMessage['phase'],
+    rejectNote?: string,
+  ): void {
     const list = this._messages();
     for (let i = list.length - 1; i >= 0; i--) {
       if (list[i].role === 'assistant') {
-        this.updateMessage(list[i].id, { streaming, phase });
+        this.updateMessage(list[i].id, { streaming, phase, rejectNote });
         break;
       }
     }

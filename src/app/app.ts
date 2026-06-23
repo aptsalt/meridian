@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { SessionService } from './core/session';
 
@@ -26,6 +26,14 @@ export class App {
     { path: '/guardrails', label: 'Guardrails', icon: '⚖', exact: false },
     { path: '/architecture', label: 'Architecture', icon: '⬡', exact: false },
   ];
+
+  readonly theme = signal<'dark' | 'light'>('dark');
+
+  toggleTheme(): void {
+    const next = this.theme() === 'dark' ? 'light' : 'dark';
+    this.theme.set(next);
+    document.documentElement.setAttribute('data-theme', next);
+  }
 
   rotate(): void {
     this.session.rotate();

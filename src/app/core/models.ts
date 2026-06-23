@@ -86,6 +86,14 @@ export type RunPhase =
 
 export type Role = 'user' | 'assistant';
 
+export interface EvalResult {
+  overall: number; // 0-100
+  faithfulness: number;
+  citationCoverage: number;
+  suitability: number;
+  unsupported: number; // count of unsupported claims
+}
+
 export interface ChatMessage {
   id: string;
   role: Role;
@@ -93,6 +101,22 @@ export interface ChatMessage {
   citations: Citation[];
   streaming: boolean;
   phase?: RunPhase;
+  rejectNote?: string;
+  feedback?: 'up' | 'down';
+  evalResult?: EvalResult;
+}
+
+export interface Feedback {
+  id: string;
+  messageId: string;
+  rating: 'up' | 'down';
+  note?: string;
+  ts: string;
+}
+
+export interface RunCost {
+  ms: number;
+  tokens: number;
 }
 
 export interface AuditEntry {
