@@ -1,7 +1,32 @@
 <div class="console">
   <!-- ============ CHAT COLUMN ============ -->
   <section class="chat">
-    <div class="thread">
+    <div class="thread" [class.is-empty]="messages().length <= 1 && !busy()">
+      @if (messages().length <= 1 && !busy()) {
+        <div class="welcome">
+          <div class="welcome-mark">M</div>
+          <h2 class="welcome-title">Banking-policy answers you can trust</h2>
+          <p class="welcome-sub">
+            Ask a policy question — Meridian retrieves the governing documents, cites them,
+            scores groundedness, and routes material answers through human approval.
+          </p>
+          <div class="how">
+            <span class="how-step"><b>1</b> Retrieve &amp; cite</span>
+            <span class="how-sep">→</span>
+            <span class="how-step"><b>2</b> Check compliance</span>
+            <span class="how-sep">→</span>
+            <span class="how-step"><b>3</b> Approve + audit</span>
+          </div>
+          <div class="welcome-suggestions">
+            @for (s of suggestions; track s; let i = $index) {
+              <button class="sugg-card" type="button" (click)="useSuggestion(s)" [style.animation-delay.ms]="80 + i * 55">
+                <span class="sugg-q">{{ s }}</span>
+                <span class="sugg-go">Ask →</span>
+              </button>
+            }
+          </div>
+        </div>
+      } @else {
       @for (m of messages(); track m.id) {
         <article class="msg" [class.user]="m.role === 'user'" [class.assistant]="m.role === 'assistant'">
           <div class="avatar" [class.you]="m.role === 'user'">
@@ -67,6 +92,7 @@
           </div>
         </article>
       }
+      }
     </div>
 
     <!-- approval gate (HITL) with reject-with-reason -->
@@ -100,13 +126,6 @@
 
     <!-- composer -->
     <div class="composer">
-      @if (!busy() && messages().length <= 1) {
-        <div class="suggestions">
-          @for (s of suggestions; track s) {
-            <button class="sugg" type="button" (click)="useSuggestion(s)">{{ s }}</button>
-          }
-        </div>
-      }
       <div class="composer-row">
         <textarea
           [ngModel]="draft()"

@@ -36,7 +36,7 @@
   border: 1px solid transparent; transition: all 0.15s ease;
 }
 .nav-link:hover { color: var(--text); background: var(--panel); }
-.nav-link.active { color: var(--text); background: var(--panel-2); border-color: var(--line-2); }
+.nav-link.active { color: var(--text); background: var(--panel-2); border-color: var(--line-2); box-shadow: inset 0 -2px 0 var(--brand); }
 .nav-icon { font-size: 0.95rem; color: var(--brand-2); }
 
 .session {
