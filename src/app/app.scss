@@ -6,9 +6,9 @@
   position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; gap: 1.5rem;
   padding: 0.7rem 1.25rem;
-  background: rgba(10, 15, 28, 0.82);
+  background: var(--topbar);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--topbar-border);
 }
 
 .brand { display: flex; align-items: center; gap: 0.55rem; }

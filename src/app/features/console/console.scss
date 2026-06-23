@@ -158,8 +158,8 @@ textarea:focus { outline: none; border-color: var(--brand); }
 .drawer-close:hover { color: var(--text); border-color: var(--brand); }
 .drawer-title { color: var(--text); font-size: 1.15rem; margin: 0 0 0.6rem; }
 .drawer-meta { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
-.drawer-body { font-size: 0.92rem; line-height: 1.7; color: #d7deec; }
-.drawer-body mark { background: rgba(56,189,248,0.28); color: #eaf6ff; border-radius: 3px; padding: 0.05rem 0.1rem; }
+.drawer-body { font-size: 0.92rem; line-height: 1.7; color: var(--text); }
+.drawer-body mark { background: var(--hl); color: var(--text); border-radius: 3px; padding: 0.05rem 0.1rem; box-shadow: inset 0 -1px 0 var(--brand-2); }
 .drawer-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.9rem 0; }
 .drawer-tags .kw { font-size: 0.72rem; color: var(--brand-2); }
 .drawer-foot { font-size: 0.78rem; color: var(--ok); border-top: 1px solid var(--line); padding-top: 0.75rem; }

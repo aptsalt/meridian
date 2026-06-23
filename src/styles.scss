@@ -1,46 +1,55 @@
 /* Meridian — global design system. BMO-aligned: signature BMO blue (#0079C1)
-   on a deep banking navy, with a clean BMO-light theme via [data-theme]. */
+   on a refined banking navy, with a clean BMO-light theme via [data-theme].
+   Dark is the default; surfaces step up in lightness for clear elevation. */
 :root {
-  --bg: #06182e;
-  --bg-2: #0a2138;
-  --panel: #0f2b4a;
-  --panel-2: #143356;
-  --line: #1e4670;
-  --line-2: #295682;
-  --text: #eaf1fb;
-  --muted: #9fb6d6;
-  --faint: #6f88ac;
-  --brand: #0079c1;   /* BMO blue */
-  --brand-2: #41b6e6; /* BMO sky */
-  --accent: #c8a24a;
-  --ok: #2ec27e;
-  --warn: #f5a623;
-  --bad: #e5484d;
+  color-scheme: dark;
+  --bg: #0a1626;       /* deep navy ground */
+  --bg-2: #0e1f33;
+  --panel: #14273f;    /* cards — clearly above the ground */
+  --panel-2: #1c3457;
+  --line: #28425f;
+  --line-2: #36527a;
+  --text: #eef3fb;
+  --muted: #abbcd8;    /* readable secondary */
+  --faint: #7589a9;
+  --brand: #1183cc;    /* BMO blue, lifted for dark surfaces */
+  --brand-2: #5cc3f2;  /* BMO sky — vivid accent */
+  --accent: #d8b667;   /* warm gold for citation codes */
+  --ok: #34d39c;
+  --warn: #f6b545;
+  --bad: #f0696f;
+  --topbar: rgba(8, 18, 32, 0.82);
+  --topbar-border: #223a59;
+  --hl: rgba(92, 195, 242, 0.26); /* citation highlight */
   --radius: 12px;
   --radius-sm: 8px;
-  --shadow: 0 12px 34px rgba(0, 20, 50, 0.45);
+  --shadow: 0 14px 40px rgba(0, 16, 40, 0.5);
   --mono: 'Cascadia Code', 'SF Mono', 'Consolas', monospace;
   --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* BMO Light — mirrors bmo.com: white surfaces, BMO blue, soft greys */
+/* BMO Light — mirrors bmo.com: white surfaces, BMO blue, soft blue-greys */
 :root[data-theme='light'] {
-  --bg: #f4f7fb;
+  color-scheme: light;
+  --bg: #eef3f9;
   --bg-2: #ffffff;
   --panel: #ffffff;
-  --panel-2: #f1f5fa;
-  --line: #dde5ef;
-  --line-2: #c7d4e3;
-  --text: #0e2238;
-  --muted: #5a6b82;
-  --faint: #8a99ad;
+  --panel-2: #f3f7fc;
+  --line: #e2e9f2;
+  --line-2: #ccd8e8;
+  --text: #0c2340;     /* BMO navy ink */
+  --muted: #51637c;
+  --faint: #8595ac;
   --brand: #0079c1;
-  --brand-2: #1573a8;
-  --accent: #9a7b2e;
-  --ok: #1a8f5e;
-  --warn: #b97400;
+  --brand-2: #0a6aa8;  /* darker blue for contrast on white */
+  --accent: #92702a;
+  --ok: #157f54;
+  --warn: #a6660a;
   --bad: #c5343a;
-  --shadow: 0 12px 30px rgba(20, 50, 90, 0.12);
+  --topbar: rgba(255, 255, 255, 0.92);
+  --topbar-border: #dbe4f0;
+  --hl: rgba(0, 121, 193, 0.16);
+  --shadow: 0 12px 30px rgba(20, 50, 90, 0.1);
 }
 
 * { box-sizing: border-box; }
