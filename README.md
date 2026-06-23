@@ -1,5 +1,8 @@
 # Meridian — Agentic Banking-Policy Copilot (Angular)
 
+**▶ Live demo:** https://aptsalt.github.io/meridian/ · **🖥 Slide deck:** https://aptsalt.github.io/meridian/presentation.html
+
+
 > A modern, **zoneless, signals-first Angular 21** application that re-imagines a
 > bank's generative-AI policy assistant (the "Lumi" pattern) as a transparent,
 > governable **agentic RAG** copilot — grounded answers with citations, MCP-style
